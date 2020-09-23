@@ -95,6 +95,7 @@
       <h1 class="site-title">xsp's blog</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
+      <p class="site-subtitle" itemprop="description">生命在于放弃</p>
   </div>
 
   <div class="site-nav-right">
@@ -155,7 +156,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2020/09/23/hello-world/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/09/23/HashMap/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -169,7 +170,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2020/09/23/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
+            <a href="/2020/09/23/HashMap/" class="post-title-link" itemprop="url">HashMap原理</a>
         </h2>
 
         <div class="post-meta">
@@ -178,8 +179,9 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2020-09-23 15:23:10" itemprop="dateCreated datePublished" datetime="2020-09-23T15:23:10+08:00">2020-09-23</time>
+              <time title="创建时间：2020-09-23 16:32:32 / 修改时间：16:53:16" itemprop="dateCreated datePublished" datetime="2020-09-23T16:32:32+08:00">2020-09-23</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -187,7 +189,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%BA%8F/" itemprop="url" rel="index"><span itemprop="name">序</span></a>
+                  <a href="/categories/%E9%9B%86%E5%90%88%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">集合框架</span></a>
                 </span>
             </span>
 
@@ -202,19 +204,37 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+          <h2 id="你知道HashMap底层的数据结构是什么吗？"><a href="#你知道HashMap底层的数据结构是什么吗？" class="headerlink" title="你知道HashMap底层的数据结构是什么吗？"></a>你知道HashMap底层的数据结构是什么吗？</h2><p>数组 + 链表 + 红黑树</p>
+<h2 id="JDK1-8-中对hash算法和寻址算法是如何优化的？"><a href="#JDK1-8-中对hash算法和寻址算法是如何优化的？" class="headerlink" title="JDK1.8 中对hash算法和寻址算法是如何优化的？"></a>JDK1.8 中对hash算法和寻址算法是如何优化的？</h2><p>HashMap中的hash算法：计算key的hashCode值，并把高16位和底16进行异或运算。</p>
+<p>HashMap中的寻址算法：hash &amp; (n - 1) 代替 取模运算，因为位运算性能要高。</p>
+<p>为什么hash算法中要对高位和低位进行异？</p>
+<p>优化 hash 算法，减少 hash 冲突。因为后面的寻址算法中，会进行 hash &amp; (n - 1) 运算，一般情况下 (n - 1) 比较小，所以 hash 值的高位会被直接丢弃掉，可以认为高位没有参与运算，高位的特征值被直接丢弃掉了。而 hash 算法中，把高位和低位进行异或运算，保留了高位的特征，后面进行寻址算法的时候，高位部分也能参与进来。</p>
+<p>为什么寻址算法中 &amp; 运算比取模运算性能高？</p>
+<p>因为在HashMap的构造方法中 会把 n 约束为 &gt;= n 的 2的幂，所以就能保证 &amp; 运算的结果和取模的结果一致。</p>
+<p>为什么 HashMap 中数组的大小为 2 的幂？</p>
+<h2 id="你知道HashMap是如何解决hash碰撞问题的吗？"><a href="#你知道HashMap是如何解决hash碰撞问题的吗？" class="headerlink" title="你知道HashMap是如何解决hash碰撞问题的吗？"></a>你知道HashMap是如何解决hash碰撞问题的吗？</h2><p>hash 碰撞：两个不同的key，经过hashCode运算出 hash 值，进行寻址算法定位出来的数组下标一样</p>
+<p>链表 O(n)</p>
+<p>链表长度超过一定数量时会转换为红黑树 O(logn)</p>
+<h2 id="说说HashMap的-put-方法？"><a href="#说说HashMap的-put-方法？" class="headerlink" title="说说HashMap的 put 方法？"></a>说说HashMap的 put 方法？</h2><ol>
+<li>扩容 当数组为空时，需要扩容（初始化）</li>
+<li>查询 根据 key 的 hash 值 + 寻址算法定位到 数组对应索引 </li>
+<li>插入 <ul>
+<li>数组槽位为空，直接插入</li>
+<li>数组槽位非空，根据 key 的引用和 key.equals() 方法进行匹配，匹配不到就插入，匹配到再决定是否替换</li>
+</ul>
+</li>
+<li>扩容 插入之后，判断 hash 的实际容量是否大于阈值，决定是否需要扩容</li>
+</ol>
+<h2 id="说说HashMap是如何进行扩容的？"><a href="#说说HashMap是如何进行扩容的？" class="headerlink" title="说说HashMap是如何进行扩容的？"></a>说说HashMap是如何进行扩容的？</h2><p>扩容步骤：</p>
+<ol>
+<li>数组容量翻倍</li>
+<li>遍历 hash 表中数组，对每个Node进行 rehash （重新计算其在新数组中的下标 ）</li>
+</ol>
+<p>JDK1.8 rehash 的技巧：扩容之后，需要重新计算 hash 值在新数组中的下标，而寻址算法 hash &amp; (newCap - 1) 有个特点，(newCap - 1) 的二进制值比 (oldCap - 1) 多一个 “1”，因此 rehash 计算出新数组中的下标只有两种可能：</p>
+<ul>
+<li>保持不变</li>
+<li>原位置 + oldCap</li>
+</ul>
 
       
     </div>
