@@ -9,6 +9,7 @@ tags:
 学习新知识，绝不是一蹴而就的，得需要一个循循渐进的过程。在分析 HashMap 源码之前咱先聊聊，HashMap怎么用？有哪些特点？
 
 文章中的源码分析基于`JDK 1.8.0_191-b12`
+<!-- more -->
 ## HashMap 了解
 ### HashMap 功能及其特性
 HashMap 支持 Key - value 键值对储存，其中 key 一般采用 String 类型，若采用 Object 类型需要复写 hashCode() 方法和 equals()方法。HashMap 默认初始容量为 16，且支持动态扩容。HashMap 查找时间复杂度很低，为常数级别。
