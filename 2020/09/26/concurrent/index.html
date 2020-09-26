@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="序volitale synchronized 在并发编程中经常用到，而并发编程中的核心三大问题是：  原子性 可见性 有序性  本文将围绕三个问题，从硬件原理开始聊。 注：本文只是一篇初稿，错误在所难免，而且涉及很多的硬件细节更多的是我的猜想与假设。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如果有人问 volitale synchronized 原理，我该怎么回答？">
+<meta property="og:url" content="http://example.com/2020/09/26/concurrent/index.html">
+<meta property="og:site_name" content="xsp&#39;s blog">
+<meta property="og:description" content="序volitale synchronized 在并发编程中经常用到，而并发编程中的核心三大问题是：  原子性 可见性 有序性  本文将围绕三个问题，从硬件原理开始聊。 注：本文只是一篇初稿，错误在所难免，而且涉及很多的硬件细节更多的是我的猜想与假设。">
+<meta property="og:locale">
+<meta property="article:published_time" content="2020-09-26T09:16:28.000Z">
+<meta property="article:modified_time" content="2020-09-26T13:28:10.382Z">
+<meta property="article:author" content="xsp">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2020/09/26/concurrent/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>如果有人问 volitale synchronized 原理，我该怎么回答？ | xsp's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">xsp's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">生命在于放弃</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/09/26/concurrent/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="xsp">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="xsp's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          如果有人问 volitale synchronized 原理，我该怎么回答？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-09-26 17:16:28 / 修改时间：21:28:10" itemprop="dateCreated datePublished" datetime="2020-09-26T17:16:28+08:00">2020-09-26</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">并发编程</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="序"><a href="#序" class="headerlink" title="序"></a>序</h2><p>volitale synchronized 在并发编程中经常用到，而并发编程中的核心三大问题是：</p>
+<ul>
+<li>原子性</li>
+<li>可见性</li>
+<li>有序性</li>
+</ul>
+<p>本文将围绕三个问题，从硬件原理开始聊。</p>
+<p>注：本文只是一篇初稿，错误在所难免，而且涉及很多的硬件细节更多的是我的猜想与假设。</p>
+<a id="more"></a>
+<h2 id="volatile、synchronized-能解决什么问题"><a href="#volatile、synchronized-能解决什么问题" class="headerlink" title="volatile、synchronized 能解决什么问题"></a>volatile、synchronized 能解决什么问题</h2><p>volitale 能保证可见性与有序性，在特别情况下能保证原子性（后文会讲到）</p>
+<p>synchronized 同时保证原子性、可见性、有序性</p>
+<h2 id="并发问题如何产生"><a href="#并发问题如何产生" class="headerlink" title="并发问题如何产生"></a>并发问题如何产生</h2><h3 id="原子性问题"><a href="#原子性问题" class="headerlink" title="原子性问题"></a>原子性问题</h3><p>JMM规定所有的赋值写操作都是原子的。</p>
+<p><strong>特例</strong>：在 32 位 JVM 中对（64位）long、double类型的赋值写操作不是原子的！32 位的 JVM 中对 long 类型变量的赋值操作，是分为低 32 位和高 32 位两步写完成的，多线程情况下存在并发问题，用 volatile 可以保证原子性。</p>
+<p><strong>注意</strong>：<code>i++</code>不是简单的赋值写操作</p>
+<h3 id="重排序问题如何产生"><a href="#重排序问题如何产生" class="headerlink" title="重排序问题如何产生"></a>重排序问题如何产生</h3><p>java 文件编译成 class 文件的过程中静态编译器（javac）会发生指令重排序，class 文件编译成机器语言的过程中，动态编译器（JIT）会发生指令重排序。处理器在执行指令的过程中，也有可能调整执行顺序。但是指令重排序并不能胡乱发生，JMM中规定了 Happens-Before 原则，专门用来限制指令重排序。</p>
+<p><strong>JIT编译器对创建对象的指令重排以及double check单例实践</strong><br>未完待续</p>
+<h3 id="底层硬件可能产生的可见性问题"><a href="#底层硬件可能产生的可见性问题" class="headerlink" title="底层硬件可能产生的可见性问题"></a>底层硬件可能产生的可见性问题</h3><p>CPU 中存在寄存器、高速缓存、写缓冲区，可见性发生的场景：如果处理器 1 把数据写到寄存器（或高速缓存、写缓冲区）中，而处理器 2 无法看到最新的数据。</p>
+<h3 id="MESI-协议可能产生的问题"><a href="#MESI-协议可能产生的问题" class="headerlink" title="MESI 协议可能产生的问题"></a>MESI 协议可能产生的问题</h3><h4 id="MESI-协议简介"><a href="#MESI-协议简介" class="headerlink" title="MESI 协议简介"></a>MESI 协议简介</h4><p>MESI协议是 CPU 缓存一致性协议.</p>
+<p>要解决缓存一致性问题，首先要解决的是多个CPU核心之间的数据传播问题。最常见的一种解决方案呢，叫作总线嗅探（Bus Snooping）。这个策略，本质上就是把所有的读写请求都通过总线（Bus）广播给所有的CPU核心，然后让各个核心去“嗅探”这些请求，再根据本地的情况进行响应。</p>
+<p>基于总线嗅探机制，其实还可以分成很多种不同的缓存一致性协议。不过其中最常用的，就是MESI协议。和很多现代的CPU技术一样，MESI协议也是在Pentium时代，被引入到Intel CPU中的。</p>
+<p>MESI协议，是一种叫作<strong>写失效（Write Invalidate）的协议</strong>。在写失效协议里，只有一个CPU核心负责写入数据，其他的核心，只是同步读取到这个写入。在这个CPU核心写入Cache之后，它会去广播一个“失效”请求告诉所有其他的CPU核心。其他的CPU核心，只是去判断自己是否也有一个“失效”版本的Cache Block，然后把这个也标记成失效的就好了。</p>
+<p>相对于写失效协议，还有一种叫作写广播（Write Broadcast）的协议。在这个协议里，一个写入请求广播到所有的CPU核心，同时更新各个核心里的Cache。</p>
+<p>写广播在实现上自然很简单，但是写广播需要占用更多的总线带宽。写失效只需要告诉其他的CPU核心，哪一个内存地址的缓存失效了，但是写广播还需要把对应的数据传输给其他CPU核心。</p>
+<h4 id="MESI-协议产生的问题"><a href="#MESI-协议产生的问题" class="headerlink" title="MESI 协议产生的问题"></a>MESI 协议产生的问题</h4><p>修改变量的时候，要发送一些Invalidate给远程的CPU，等到远程CPU返回一个ACK，才能进行下一步。这一过程中如果远程的CPU比较繁忙，甚至会带来更大的延迟。并且如果有内存访问，会带来几百个周期的延迟。</p>
+<p>所以CPU实现加入了优化，在写侧加入写缓冲区（store buffer）进行写缓存，写完立即返回；在变量状态需要变更侧加入无效队列（Invalidate Queue）来优化更新。</p>
+<p>由于store buffer和Invalidate Queue的存在导致了变量状态的变更不及时，所以会引发可见性与有序性等问题。</p>
+<p><strong>可见性问题</strong></p>
+<p><strong>有序性问题</strong></p>
+<h2 id="Java-内存模型如何解决可见性与有序性问题"><a href="#Java-内存模型如何解决可见性与有序性问题" class="headerlink" title="Java 内存模型如何解决可见性与有序性问题"></a>Java 内存模型如何解决可见性与有序性问题</h2><h3 id="Java-内存模型"><a href="#Java-内存模型" class="headerlink" title="Java 内存模型"></a>Java 内存模型</h3><p>主要介绍四种内存屏障</p>
+<p>以及最重要的一种内存屏障</p>
+<h3 id="内存屏障如何解决可见性与有序性问题"><a href="#内存屏障如何解决可见性与有序性问题" class="headerlink" title="内存屏障如何解决可见性与有序性问题"></a>内存屏障如何解决可见性与有序性问题</h3><p>由于不同架构的CPU支持的内存屏障不同，x86 架构的 cpu 只支持 StoreLoad 屏障。下面介绍 StoreLoad 屏障是如何解决 MESI协议 引发的有序性和可见性问题。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">store操作</span><br><span class="line">StoreLoad屏障</span><br><span class="line">load操作</span><br></pre></td></tr></table></figure>
+
+<p>可见性</p>
+<p>StoreLoad 屏障保证，store 操作在写入写缓冲区之后，给总线发送 cache Invalidate 的消息后，必须强制等待所有 cpu 返回 Invalidate ack 之后，再把写缓冲区中的数据强制刷回高速缓存和主内存中。</p>
+<p>有序性（看到的读写顺序乱了）</p>
+<p>load 操作时，判断失效队列非空，强制让失效队列中的缓存全部失效，在执行读取操作（高速缓存中没有数据就从主内存中读取）。</p>
+<h2 id="volatile、synchronized-是如何基于内存屏障来保证可见性与有序性的"><a href="#volatile、synchronized-是如何基于内存屏障来保证可见性与有序性的" class="headerlink" title="volatile、synchronized 是如何基于内存屏障来保证可见性与有序性的"></a>volatile、synchronized 是如何基于内存屏障来保证可见性与有序性的</h2>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/09/23/HashMap/" rel="prev" title="HashMap原理">
+      <i class="fa fa-chevron-left"></i> HashMap原理
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%8F"><span class="nav-number">1.</span> <span class="nav-text">序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#volatile%E3%80%81synchronized-%E8%83%BD%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98"><span class="nav-number">2.</span> <span class="nav-text">volatile、synchronized 能解决什么问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E9%97%AE%E9%A2%98%E5%A6%82%E4%BD%95%E4%BA%A7%E7%94%9F"><span class="nav-number">3.</span> <span class="nav-text">并发问题如何产生</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E5%AD%90%E6%80%A7%E9%97%AE%E9%A2%98"><span class="nav-number">3.1.</span> <span class="nav-text">原子性问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E6%8E%92%E5%BA%8F%E9%97%AE%E9%A2%98%E5%A6%82%E4%BD%95%E4%BA%A7%E7%94%9F"><span class="nav-number">3.2.</span> <span class="nav-text">重排序问题如何产生</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%95%E5%B1%82%E7%A1%AC%E4%BB%B6%E5%8F%AF%E8%83%BD%E4%BA%A7%E7%94%9F%E7%9A%84%E5%8F%AF%E8%A7%81%E6%80%A7%E9%97%AE%E9%A2%98"><span class="nav-number">3.3.</span> <span class="nav-text">底层硬件可能产生的可见性问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MESI-%E5%8D%8F%E8%AE%AE%E5%8F%AF%E8%83%BD%E4%BA%A7%E7%94%9F%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">3.4.</span> <span class="nav-text">MESI 协议可能产生的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#MESI-%E5%8D%8F%E8%AE%AE%E7%AE%80%E4%BB%8B"><span class="nav-number">3.4.1.</span> <span class="nav-text">MESI 协议简介</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MESI-%E5%8D%8F%E8%AE%AE%E4%BA%A7%E7%94%9F%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">3.4.2.</span> <span class="nav-text">MESI 协议产生的问题</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Java-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E5%8F%AF%E8%A7%81%E6%80%A7%E4%B8%8E%E6%9C%89%E5%BA%8F%E6%80%A7%E9%97%AE%E9%A2%98"><span class="nav-number">4.</span> <span class="nav-text">Java 内存模型如何解决可见性与有序性问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Java-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.1.</span> <span class="nav-text">Java 内存模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E5%8F%AF%E8%A7%81%E6%80%A7%E4%B8%8E%E6%9C%89%E5%BA%8F%E6%80%A7%E9%97%AE%E9%A2%98"><span class="nav-number">4.2.</span> <span class="nav-text">内存屏障如何解决可见性与有序性问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#volatile%E3%80%81synchronized-%E6%98%AF%E5%A6%82%E4%BD%95%E5%9F%BA%E4%BA%8E%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C%E6%9D%A5%E4%BF%9D%E8%AF%81%E5%8F%AF%E8%A7%81%E6%80%A7%E4%B8%8E%E6%9C%89%E5%BA%8F%E6%80%A7%E7%9A%84"><span class="nav-number">5.</span> <span class="nav-text">volatile、synchronized 是如何基于内存屏障来保证可见性与有序性的</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">xsp</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">xsp</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

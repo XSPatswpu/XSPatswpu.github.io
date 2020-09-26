@@ -156,6 +156,88 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/09/26/concurrent/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="xsp">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="xsp's blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/09/26/concurrent/" class="post-title-link" itemprop="url">如果有人问 volitale synchronized 原理，我该怎么回答？</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-09-26 17:16:28 / 修改时间：21:28:10" itemprop="dateCreated datePublished" datetime="2020-09-26T17:16:28+08:00">2020-09-26</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">并发编程</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="序"><a href="#序" class="headerlink" title="序"></a>序</h2><p>volitale synchronized 在并发编程中经常用到，而并发编程中的核心三大问题是：</p>
+<ul>
+<li>原子性</li>
+<li>可见性</li>
+<li>有序性</li>
+</ul>
+<p>本文将围绕三个问题，从硬件原理开始聊。</p>
+<p>注：本文只是一篇初稿，错误在所难免，而且涉及很多的硬件细节更多的是我的猜想与假设。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/09/26/concurrent/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://example.com/2020/09/23/HashMap/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -179,10 +261,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2020-09-23 16:32:32 / 修改时间：20:25:16" itemprop="dateCreated datePublished" datetime="2020-09-23T16:32:32+08:00">2020-09-23</time>
+              <time title="创建时间：2020-09-23 16:32:32" itemprop="dateCreated datePublished" datetime="2020-09-23T16:32:32+08:00">2020-09-23</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-09-26 21:25:51" itemprop="dateModified" datetime="2020-09-26T21:25:51+08:00">2020-09-26</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -206,60 +294,14 @@
       
           <h2 id="序"><a href="#序" class="headerlink" title="序"></a>序</h2><p>学习新知识，绝不是一蹴而就的，得需要一个循循渐进的过程。在分析 HashMap 源码之前咱先聊聊，HashMap怎么用？有哪些特点？</p>
 <p>文章中的源码分析基于<code>JDK 1.8.0_191-b12</code></p>
-<h2 id="HashMap-了解"><a href="#HashMap-了解" class="headerlink" title="HashMap 了解"></a>HashMap 了解</h2><h3 id="HashMap-功能及其特性"><a href="#HashMap-功能及其特性" class="headerlink" title="HashMap 功能及其特性"></a>HashMap 功能及其特性</h3><p>HashMap 支持 Key - value 键值对储存，其中 key 一般采用 String 类型，若采用 Object 类型需要复写 hashCode() 方法和 equals()方法。HashMap 默认初始容量为 16，且支持动态扩容。HashMap 查找时间复杂度很低，为常数级别。</p>
-<h3 id="HashMap-数据结构"><a href="#HashMap-数据结构" class="headerlink" title="HashMap 数据结构"></a>HashMap 数据结构</h3><p>HashMap 底层数据结构为：数组 + 链表 + 红黑树</p>
-<p>正是由于底层数据结构为数组，所以 HashMap 的查询效率很高，由于数组容量有限，当发生 hash 冲突时，采用拉链法解决冲突，在数组的“桶”节点上生成链表，当链表过长时，该链表会转化为红黑树。</p>
-<h2 id="HashMap-进阶"><a href="#HashMap-进阶" class="headerlink" title="HashMap 进阶"></a>HashMap 进阶</h2><p>在深入 HashMap get() 方法、put() 方法之前，得先了解一些基础知识。还是那句话，学习知识得循循渐进，切莫着急！</p>
-<h3 id="HashMap-构造方法"><a href="#HashMap-构造方法" class="headerlink" title="HashMap 构造方法"></a>HashMap 构造方法</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">public HashMap(int initialCapacity, float loadFactor) &#123;</span><br><span class="line">    if (initialCapacity &lt; 0)</span><br><span class="line">        throw new IllegalArgumentException(&quot;Illegal initial capacity: &quot; +</span><br><span class="line">                                           initialCapacity);</span><br><span class="line">    if (initialCapacity &gt; MAXIMUM_CAPACITY)</span><br><span class="line">        initialCapacity &#x3D; MAXIMUM_CAPACITY;</span><br><span class="line">    if (loadFactor &lt;&#x3D; 0 || Float.isNaN(loadFactor))</span><br><span class="line">        throw new IllegalArgumentException(&quot;Illegal load factor: &quot; +</span><br><span class="line">                                           loadFactor);</span><br><span class="line">    this.loadFactor &#x3D; loadFactor;</span><br><span class="line">    this.threshold &#x3D; tableSizeFor(initialCapacity);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public HashMap(int initialCapacity) &#123;</span><br><span class="line">    this(initialCapacity, DEFAULT_LOAD_FACTOR);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public HashMap() &#123;</span><br><span class="line">    this.loadFactor &#x3D; DEFAULT_LOAD_FACTOR; &#x2F;&#x2F; all other fields defaulted</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>上面三个构造方法中，并没有初始化数组空间，因此大致可以猜想 HashMap 的初始化采用的懒加载方式。</p>
-<p>主要看第一个构造方法中的<code>tableSizeFor()</code>方法，这个是计算数据容量的方法，计算的结果暂存在<code>threshold</code>中。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">static final int tableSizeFor(int cap) &#123;</span><br><span class="line">    int n &#x3D; cap - 1;</span><br><span class="line">    n |&#x3D; n &gt;&gt;&gt; 1;</span><br><span class="line">    n |&#x3D; n &gt;&gt;&gt; 2;</span><br><span class="line">    n |&#x3D; n &gt;&gt;&gt; 4;</span><br><span class="line">    n |&#x3D; n &gt;&gt;&gt; 8;</span><br><span class="line">    n |&#x3D; n &gt;&gt;&gt; 16;</span><br><span class="line">    return (n &lt; 0) ? 1 : (n &gt;&#x3D; MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>大致解释下，该方法的目的是为了计算出大于等于<code>cap</code>的最小2的幂。</p>
-<h3 id="HashMap-寻址算法"><a href="#HashMap-寻址算法" class="headerlink" title="HashMap 寻址算法"></a>HashMap 寻址算法</h3><p>一般的寻址算法可以采用取模的方式，即 hash 值模以数组大小。而源码中采用<code>(n - 1) &amp; hash</code>方式，其中 n 为数组大小。</p>
-<p>为什么要采用位运算呢？</p>
-<p>位运算效率优于取模运算。</p>
-<p>位运算方式与取模方式有什么区别呢？</p>
-<p>当 n 为 2 的幂时，位运算与取模的方式等效。</p>
-<h3 id="HashMap-hash-方法"><a href="#HashMap-hash-方法" class="headerlink" title="HashMap hash() 方法"></a>HashMap hash() 方法</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">static final int hash(Object key) &#123;</span><br><span class="line">    int h;</span><br><span class="line">    return (key &#x3D;&#x3D; null) ? 0 : (h &#x3D; key.hashCode()) ^ (h &gt;&gt;&gt; 16);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>JDK 1.8</code>中对<code>hash()</code>方法进行了优化，增加了异或操作，可以减少 hash 冲突，但是为什么呢？</p>
-<p>因为寻址算法中，会进行 hash &amp; (n - 1) 运算，一般情况下 (n - 1) 比较小，所以在与运算后 hash 值的高位会被直接丢弃掉。而 hash 算法中，把高位和低位进行异或运算，保留了高位的特征，后面进行寻址算法的时候，高位部分也能参与进来。</p>
-<h2 id="HashMap-深入分析"><a href="#HashMap-深入分析" class="headerlink" title="HashMap 深入分析"></a>HashMap 深入分析</h2><p>清除前面进阶部分的知识后，理解 HashMap 后面源码就很简单了。</p>
-<h3 id="HashMap-get-方法"><a href="#HashMap-get-方法" class="headerlink" title="HashMap get() 方法"></a>HashMap get() 方法</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">final Node&lt;K,V&gt; getNode(int hash, Object key) &#123;</span><br><span class="line">    Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; first, e; int n; K k;</span><br><span class="line">    if ((tab &#x3D; table) !&#x3D; null &amp;&amp; (n &#x3D; tab.length) &gt; 0 &amp;&amp;</span><br><span class="line">        (first &#x3D; tab[(n - 1) &amp; hash]) !&#x3D; null) &#123;</span><br><span class="line">        if (first.hash &#x3D;&#x3D; hash &amp;&amp; &#x2F;&#x2F; always check first node</span><br><span class="line">            ((k &#x3D; first.key) &#x3D;&#x3D; key || (key !&#x3D; null &amp;&amp; key.equals(k))))</span><br><span class="line">            return first;</span><br><span class="line">        if ((e &#x3D; first.next) !&#x3D; null) &#123;</span><br><span class="line">            if (first instanceof TreeNode)</span><br><span class="line">                return ((TreeNode&lt;K,V&gt;)first).getTreeNode(hash, key);</span><br><span class="line">            do &#123;</span><br><span class="line">                if (e.hash &#x3D;&#x3D; hash &amp;&amp;</span><br><span class="line">                    ((k &#x3D; e.key) &#x3D;&#x3D; key || (key !&#x3D; null &amp;&amp; key.equals(k))))</span><br><span class="line">                    return e;</span><br><span class="line">            &#125; while ((e &#x3D; e.next) !&#x3D; null);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return null;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>get()</code>大致流程，红黑树过于复杂，分析过程不包括红黑树</p>
-<ol>
-<li>利用寻址算法定位的数组下标中的元素</li>
-<li>若当前元素非空，检查节点的 key 是否相等</li>
-<li>若第一个节点 key 不相等，且 next 节点非空，遍历链表找到元素为止</li>
-</ol>
-<p>以上流程中，判断 key 是否相等的逻辑。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">first.hash &#x3D;&#x3D; hash &amp;&amp; ((k &#x3D; first.key) &#x3D;&#x3D; key || (key !&#x3D; null &amp;&amp; key.equals(k)))</span><br></pre></td></tr></table></figure>
-<p>以 String 类型 key 为例，先判断引用值是否相等，不相等再判断 <code>equals()</code> 方法是否相等。这也是为什么用 Object 类作为 key 需要复写 <code>equals()</code> 方法的原因。</p>
-<h3 id="HashMap-put-方法"><a href="#HashMap-put-方法" class="headerlink" title="HashMap put() 方法"></a>HashMap put() 方法</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">final V putVal(int hash, K key, V value, boolean onlyIfAbsent,</span><br><span class="line">               boolean evict) &#123;</span><br><span class="line">    Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; int n, i;</span><br><span class="line">    if ((tab &#x3D; table) &#x3D;&#x3D; null || (n &#x3D; tab.length) &#x3D;&#x3D; 0)</span><br><span class="line">        n &#x3D; (tab &#x3D; resize()).length;</span><br><span class="line">    if ((p &#x3D; tab[i &#x3D; (n - 1) &amp; hash]) &#x3D;&#x3D; null)</span><br><span class="line">        tab[i] &#x3D; newNode(hash, key, value, null);</span><br><span class="line">    else &#123;</span><br><span class="line">        Node&lt;K,V&gt; e; K k;</span><br><span class="line">        if (p.hash &#x3D;&#x3D; hash &amp;&amp;</span><br><span class="line">            ((k &#x3D; p.key) &#x3D;&#x3D; key || (key !&#x3D; null &amp;&amp; key.equals(k))))</span><br><span class="line">            e &#x3D; p;</span><br><span class="line">        else if (p instanceof TreeNode)</span><br><span class="line">            e &#x3D; ((TreeNode&lt;K,V&gt;)p).putTreeVal(this, tab, hash, key, value);</span><br><span class="line">        else &#123;</span><br><span class="line">            for (int binCount &#x3D; 0; ; ++binCount) &#123;</span><br><span class="line">                if ((e &#x3D; p.next) &#x3D;&#x3D; null) &#123;</span><br><span class="line">                    p.next &#x3D; newNode(hash, key, value, null);</span><br><span class="line">                    if (binCount &gt;&#x3D; TREEIFY_THRESHOLD - 1) &#x2F;&#x2F; -1 for 1st</span><br><span class="line">                        treeifyBin(tab, hash);</span><br><span class="line">                    break;</span><br><span class="line">                &#125;</span><br><span class="line">                if (e.hash &#x3D;&#x3D; hash &amp;&amp;</span><br><span class="line">                    ((k &#x3D; e.key) &#x3D;&#x3D; key || (key !&#x3D; null &amp;&amp; key.equals(k))))</span><br><span class="line">                    break;</span><br><span class="line">                p &#x3D; e;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        if (e !&#x3D; null) &#123; &#x2F;&#x2F; existing mapping for key</span><br><span class="line">            V oldValue &#x3D; e.value;</span><br><span class="line">            if (!onlyIfAbsent || oldValue &#x3D;&#x3D; null)</span><br><span class="line">                e.value &#x3D; value;</span><br><span class="line">            afterNodeAccess(e);</span><br><span class="line">            return oldValue;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    ++modCount;</span><br><span class="line">    if (++size &gt; threshold)</span><br><span class="line">        resize();</span><br><span class="line">    afterNodeInsertion(evict);</span><br><span class="line">    return null;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>put()</code>方法看起来一大坨，其实核心代码没几行，简单说下流程</p>
-<ol>
-<li>扩容 当数组为空时，需要扩容（初始化发生在<code>put()</code>方法中）</li>
-<li>查询 寻址算法定位到数组下标 </li>
-<li>插入 <ul>
-<li>数组槽位为空，直接插入</li>
-<li>数组槽位非空，根据 key 的引用和 key.equals() 方法进行匹配，匹配不到就插入，匹配到再决定是否替换</li>
-</ul>
-</li>
-<li>扩容 插入之后，判断 hash 的实际容量是否大于阈值，决定是否需要扩容</li>
-</ol>
-<h3 id="HashMap-如何扩容"><a href="#HashMap-如何扩容" class="headerlink" title="HashMap 如何扩容"></a>HashMap 如何扩容</h3><p>扩容步骤：</p>
-<ol>
-<li>数组容量翻倍</li>
-<li>遍历 hash 表中数组，对每个Node进行 rehash （重新计算其在新数组中的下标 ）</li>
-</ol>
-<p><code>JDK 1.8</code> rehash 的技巧：扩容之后，需要重新计算 hash 值在新数组中的下标，而寻址算法 hash &amp; (newCap - 1) 有个特点，(newCap - 1) 的二进制值比 (oldCap - 1) 多一个 “1”，因此 rehash 计算出新数组中的下标只有两种可能：</p>
-<ul>
-<li>保持不变</li>
-<li>原位置 + oldCap</li>
-</ul>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/09/23/HashMap/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -340,14 +382,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">1</span>
+          <span class="site-state-item-count">2</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-count">2</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>
